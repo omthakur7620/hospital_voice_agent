@@ -1,0 +1,357 @@
+{
+    "hospital_name": "Ruby Hall Clinic",
+    "timezone": "Asia/Kolkata",
+    "locations": [
+        "Sassoon Road, Sangamvadi, Pune",
+        "Hinjawadi, Pune",
+        "Wanowrie, Pune"
+    ],
+    "departments": [
+        "Cardiology",
+        "ENT",
+        "Gastroenterology",
+        "General Surgery",
+        "Medicine",
+        "Nephrology",
+        "Neurology",
+        "OBGY",
+        "Ophthalmology",
+        "Orthopedics",
+        "Paediatrics",
+        "Psychiatry",
+        "Rheumatology",
+        "Dermatology",
+        "Hematology"
+    ],
+    "appointment_types": [
+        "New Consultation",
+        "Follow-up Visit",
+        "By Appointment",
+        "Emergency / Walk-in Consultation"
+    ],
+    "doctors": [
+        {
+            "name": "Dr. Abhay Somani",
+            "department": "Cardiology",
+            "specialization": "Interventional Cardiologist",
+            "location": "Wanowrie, Pune",
+            "working_days": [0, 1, 2, 3, 4, 5],
+            "available_slots": []
+        },
+        {
+            "name": "Dr. Bhushan Bari",
+            "department": "Cardiology",
+            "specialization": "Interventional Cardiologist",
+            "location": "Wanowrie, Pune",
+            "working_days": [0, 1, 3, 4, 5],
+            "available_slots": [
+                "11:30",
+                "12:00",
+                "12:30",
+                "13:00"
+            ]
+        },
+        {
+            "name": "Dr. Gaurav Ganeshwala",
+            "department": "Cardiology",
+            "specialization": "Senior Consultant Cardiologist & Heart Failure Specialist",
+            "location": "Wanowrie, Pune",
+            "working_days": [0, 1, 3],
+            "available_slots": []
+        },
+        {
+            "name": "Dr. Ravi Kalra",
+            "department": "Cardiology",
+            "specialization": "Consultant Cardiologist",
+            "location": "Wanowrie, Pune",
+            "working_days": [2, 4],
+            "available_slots": []
+        },
+        {
+            "name": "Dr. Manoj Bauskar",
+            "department": "ENT",
+            "specialization": "ENT Specialist",
+            "location": "Wanowrie, Pune",
+            "working_days": [1, 2, 3, 5],
+            "available_slots": [
+                "10:00",
+                "10:30",
+                "11:00",
+                "11:30",
+                "12:00",
+                "12:30",
+                "13:00",
+                "13:30",
+                "14:00",
+                "14:30"
+            ]
+        },
+        {
+            "name": "Dr. Nirmay Kamble",
+            "department": "ENT",
+            "specialization": "ENT Consultant",
+            "location": "Wanowrie, Pune",
+            "working_days": [0, 1, 2, 3, 4, 5],
+            "available_slots": []
+        },
+        {
+            "name": "Dr. Sanjay Salunkhe",
+            "department": "Gastroenterology",
+            "specialization": "Consultant Gastroenterologist",
+            "location": "Wanowrie, Pune",
+            "working_days": [1, 3, 5],
+            "available_slots": [
+                "08:30"
+            ]
+        },
+        {
+            "name": "Dr. Narendra Chopade",
+            "department": "Gastroenterology",
+            "specialization": "Gastroenterologist",
+            "location": "Wanowrie, Pune",
+            "working_days": [0, 1, 2, 3, 4, 5],
+            "available_slots": [
+                "14:30",
+                "15:00",
+                "15:30",
+                "16:00"
+            ]
+        },
+        {
+            "name": "Dr. Vikram Patil",
+            "department": "Gastroenterology",
+            "specialization": "Gastroenterology Consultant",
+            "location": "Wanowrie, Pune",
+            "working_days": [2, 4],
+            "available_slots": [
+                "08:30",
+                "09:00",
+                "09:30",
+                "10:00"
+            ]
+        },
+        {
+            "name": "Dr. Harshwardhan Chaukulkar",
+            "department": "General Surgery",
+            "specialization": "General Surgeon",
+            "location": "Wanowrie, Pune",
+            "working_days": [0, 1, 2, 3, 4, 5],
+            "available_slots": []
+        },
+        {
+            "name": "Dr. Dinesh Jain",
+            "department": "General Surgery",
+            "specialization": "Consultant General Surgeon",
+            "location": "Wanowrie, Pune",
+            "working_days": [0, 1, 2, 3, 4, 5],
+            "available_slots": []
+        },
+        {
+            "name": "Dr. Sameer Badami",
+            "department": "General Surgery",
+            "specialization": "Laparoscopic & General Surgeon",
+            "location": "Wanowrie, Pune",
+            "working_days": [1, 5],
+            "available_slots": [
+                "10:00",
+                "10:30",
+                "11:00",
+                "11:30"
+            ]
+        },
+        {
+            "name": "Dr. Amit Sakaria",
+            "department": "Medicine",
+            "specialization": "Internal Medicine Consultant",
+            "location": "Wanowrie, Pune",
+            "working_days": [0, 1, 2, 3, 4, 5],
+            "available_slots": []
+        },
+        {
+            "name": "Dr. Ravindra Chhajed",
+            "department": "Medicine",
+            "specialization": "General Physician",
+            "location": "Wanowrie, Pune",
+            "working_days": [0, 1, 2, 3, 4, 5],
+            "available_slots": [
+                "10:45",
+                "11:15",
+                "11:45"
+            ]
+        },
+        {
+            "name": "Dr. Suhas Rajput",
+            "department": "Medicine",
+            "specialization": "Consulting Physician",
+            "location": "Wanowrie, Pune",
+            "working_days": [0, 1, 2, 3, 4, 5],
+            "available_slots": [
+                "16:00",
+                "16:30",
+                "17:00",
+                "17:30"
+            ]
+        },
+        {
+            "name": "Dr. Sandeep Mokhandikar",
+            "department": "Nephrology",
+            "specialization": "Consultant Nephrologist",
+            "location": "Wanowrie, Pune",
+            "working_days": [],
+            "available_slots": []
+        },
+        {
+            "name": "Dr. Avinash Ignatius",
+            "department": "Nephrology",
+            "specialization": "Senior Consultant Nephrologist",
+            "location": "Wanowrie, Pune",
+            "working_days": [0, 1, 2, 3, 4, 5],
+            "available_slots": []
+        },
+        {
+            "name": "Dr. Nilesh Palasdeokar",
+            "department": "Neurology",
+            "specialization": "Consultant Neurologist",
+            "location": "Wanowrie, Pune",
+            "working_days": [0, 1, 2, 3, 4, 5],
+            "available_slots": []
+        },
+        {
+            "name": "Dr. Anita Vikram",
+            "department": "Neurology",
+            "specialization": "Neurologist",
+            "location": "Wanowrie, Pune",
+            "working_days": [4],
+            "available_slots": [
+                "16:30",
+                "17:00",
+                "17:30",
+                "18:00"
+            ]
+        },
+        {
+            "name": "Dr. Afshan Maniyar",
+            "department": "OBGY",
+            "specialization": "Consultant Obstetrician & Gynecologist",
+            "location": "Wanowrie, Pune",
+            "working_days": [0, 1, 2, 3, 4, 5],
+            "available_slots": [
+                "10:00",
+                "10:30",
+                "11:00",
+                "11:30",
+                "12:00",
+                "12:30"
+            ]
+        },
+        {
+            "name": "Dr. Namita Joshi",
+            "department": "OBGY",
+            "specialization": "Gynecologist",
+            "location": "Wanowrie, Pune",
+            "working_days": [0, 1, 2, 3, 4, 5],
+            "available_slots": [
+                "17:00",
+                "17:30",
+                "18:00",
+                "18:30"
+            ]
+        },
+        {
+            "name": "Dr. Suni Abraham",
+            "department": "Ophthalmology",
+            "specialization": "Eye Specialist",
+            "location": "Wanowrie, Pune",
+            "working_days": [0, 1, 2, 3, 4, 5],
+            "available_slots": [
+                "09:00",
+                "09:30",
+                "10:00",
+                "10:30",
+                "11:00",
+                "11:30",
+                "12:00",
+                "12:30"
+            ]
+        },
+        {
+            "name": "Dr. Ashraf Khan",
+            "department": "Orthopedics",
+            "specialization": "Orthopedic Surgeon",
+            "location": "Wanowrie, Pune",
+            "working_days": [0, 1, 2, 3, 4, 5],
+            "available_slots": []
+        },
+        {
+            "name": "Dr. Sana Ahmed",
+            "department": "Orthopedics",
+            "specialization": "Orthopedics Consultant",
+            "location": "Wanowrie, Pune",
+            "working_days": [0, 1, 2, 3, 4, 5],
+            "available_slots": [
+                "16:00",
+                "16:30",
+                "17:00",
+                "17:30"
+            ]
+        },
+        {
+            "name": "Dr. Nilesh Unecha",
+            "department": "Paediatrics",
+            "specialization": "Pediatrician & Neonatologist",
+            "location": "Wanowrie, Pune",
+            "working_days": [0, 1, 2, 3, 4, 5],
+            "available_slots": []
+        },
+        {
+            "name": "Dr. Manish Bajpai",
+            "department": "Psychiatry",
+            "specialization": "Consultant Psychiatrist",
+            "location": "Wanowrie, Pune",
+            "working_days": [0, 1, 2, 3, 4, 5],
+            "available_slots": []
+        },
+        {
+            "name": "Dr. Soham Kadam",
+            "department": "Rheumatology",
+            "specialization": "Consultant Rheumatologist",
+            "location": "Wanowrie, Pune",
+            "working_days": [0, 1, 3, 4],
+            "available_slots": [
+                "13:00",
+                "13:30",
+                "14:00",
+                "14:30"
+            ]
+        },
+        {
+            "name": "Dr. Avinash Urmil",
+            "department": "Dermatology",
+            "specialization": "Consultant Dermatologist",
+            "location": "Wanowrie, Pune",
+            "working_days": [0, 1, 2, 3, 4, 5],
+            "available_slots": [
+                "17:00",
+                "17:30",
+                "18:00",
+                "18:30"
+            ]
+        },
+        {
+            "name": "Dr. Ahad Munshi",
+            "department": "Dermatology",
+            "specialization": "Dermatologist",
+            "location": "Wanowrie, Pune",
+            "working_days": [0, 1, 2, 3, 4, 5],
+            "available_slots": []
+        },
+        {
+            "name": "Dr. Abhijeet Baheti",
+            "department": "Hematology",
+            "specialization": "Clinical Hematologist & Hemato-Oncologist",
+            "location": "Wanowrie, Pune",
+            "working_days": [],
+            "available_slots": []
+        }
+    ]
+}
