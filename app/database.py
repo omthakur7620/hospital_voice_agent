@@ -35,7 +35,7 @@ os.environ['SQLALCHEMY_WARN_20'] = '1'
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
-from app.config import settings
+from app.config import settings  # This is correct
 from app.logger import get_logger
 
 logger = get_logger(__name__)
@@ -59,8 +59,6 @@ engine = create_async_engine(
     max_overflow=10,
     pool_recycle=1800,
     pool_timeout=30,
-    # Force asyncpg driver
-    module=__import__('asyncpg'),
 )
 
 AsyncSessionLocal = async_sessionmaker(
@@ -72,6 +70,7 @@ AsyncSessionLocal = async_sessionmaker(
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """FastAPI dependency for database session."""
     async with AsyncSessionLocal() as session:
         try:
             yield session
@@ -85,6 +84,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 @asynccontextmanager
 async def get_db_context() -> AsyncGenerator[AsyncSession, None]:
+    """Database session context manager for scripts."""
     async with AsyncSessionLocal() as session:
         try:
             yield session
@@ -97,6 +97,9 @@ async def get_db_context() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def check_db_connection() -> bool:
+    """
+    Check database connection with detailed error reporting.
+    """
     from sqlalchemy import text
     try:
         async with engine.connect() as conn:
