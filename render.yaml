@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: hospital-voice-api
+    runtime: docker
+    region: oregon
+    plan: starter
+    dockerfile: ./Dockerfile
+    dockerfilePath: ./
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: LOG_LEVEL
+        value: WARNING
+      - key: TIMEZONE
+        value: Asia/Kolkata
+      - key: SLOT_DURATION_MINUTES
+        value: "30"
+      - key: MAX_ALTERNATIVE_SLOTS
+        value: "3"
+      - key: BOOKING_WINDOW_DAYS
+        value: "30"
+      - key: HOSPITAL_DATA_PATH
+        value: data/hospital_data.json
+      - key: ALLOWED_ORIGINS
+        value: https://vapi.ai,https://yourdomain.com
+      - fromGroup: hospital-voice-db
+
+databases:
+  - name: hospital-voice-db
+    databaseName: hospital_voice
+    plan: starter
+    region: oregon
+    postgresMajorVersion: "15"
+    envVarPrefix: DATABASE

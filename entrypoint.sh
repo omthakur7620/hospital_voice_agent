@@ -1,5 +1,6 @@
 #!/bin/bash
-# Railway-optimized entrypoint script
+# Production-optimized entrypoint script
+# Works with Railway, Render, Railway, and other platforms
 # Initializes database and starts the application without blocking health checks
 
 set +e  # Don't exit on errors - let app handle gracefully

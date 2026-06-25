@@ -28,8 +28,12 @@ RUN chmod +x /app/entrypoint.sh
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
+# Expose port (Render uses 8080)
+EXPOSE 8080
+
 # Set the entrypoint
 ENTRYPOINT ["/app/entrypoint.sh"]
 
 # Default command - can be overridden
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# For Render: uses port 8080
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
