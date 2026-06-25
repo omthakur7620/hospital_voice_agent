@@ -50,16 +50,23 @@ class Settings(BaseSettings):
 
     @property
     def database_url_async(self) -> str:
-        """Convert DATABASE_URL to async driver format.
-        
-        Render injects: postgresql://user:pass@host:port/dbname
-        We need:        postgresql+asyncpg://user:pass@host:port/dbname
+        """
+        Normalizes DATABASE_URL to always use the asyncpg driver, regardless
+        of which prefix the hosting provider hands us. Some providers use
+        'postgres://' (no 'ql') instead of 'postgresql://' — a naive .replace()
+        silently fails to match that and leaves the sync driver in place,
+        which breaks create_async_engine() with exactly this error.
         """
         url = self.DATABASE_URL
-        # Replace postgresql:// with postgresql+asyncpg:// if not already present
-        if "postgresql://" in url and "asyncpg" not in url:
-            url = url.replace("postgresql://", "postgresql+asyncpg://")
-        return url
+
+        if url.startswith("postgres://"):
+            return url.replace("postgres://", "postgresql+asyncpg://", 1)
+        if url.startswith("postgresql://"):
+            return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        if url.startswith("postgresql+psycopg2://"):
+            return url.replace("postgresql+psycopg2://", "postgresql+asyncpg://", 1)
+
+        return url  # already postgresql+asyncpg:// (or something custom) — leave it alone
 
     @property
     def cors_origins(self) -> List[str]:
