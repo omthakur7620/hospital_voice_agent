@@ -31,7 +31,7 @@ class Base(DeclarativeBase):
 
 
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    settings.database_url_async,  # Use async driver conversion
     echo=settings.DEBUG,          # log raw SQL only in debug mode
     pool_pre_ping=True,
     pool_size=10,

@@ -19,7 +19,8 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     # --- Database ---
-    # Async driver required: postgresql+asyncpg://user:pass@host:port/dbname
+    # Render injects: postgresql://user:pass@host:port/dbname
+    # We need to convert to async driver: postgresql+asyncpg://...
     DATABASE_URL: str
 
     # --- CORS ---
@@ -46,6 +47,19 @@ class Settings(BaseSettings):
         case_sensitive=True,
         extra="ignore",
     )
+
+    @property
+    def database_url_async(self) -> str:
+        """Convert DATABASE_URL to async driver format.
+        
+        Render injects: postgresql://user:pass@host:port/dbname
+        We need:        postgresql+asyncpg://user:pass@host:port/dbname
+        """
+        url = self.DATABASE_URL
+        # Replace postgresql:// with postgresql+asyncpg:// if not already present
+        if "postgresql://" in url and "asyncpg" not in url:
+            url = url.replace("postgresql://", "postgresql+asyncpg://")
+        return url
 
     @property
     def cors_origins(self) -> List[str]:
