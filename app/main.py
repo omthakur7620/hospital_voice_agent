@@ -13,6 +13,7 @@ Key features:
 """
 
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -139,11 +140,10 @@ async def health_check():
         "status": "healthy",
         "service": settings.APP_NAME,
         "environment": settings.APP_ENV,
-        "timestamp": datetime.now(UTC).isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
 
-# Root endpoint
 @app.get("/", tags=["System"])
 async def root():
     """Root endpoint with basic info"""
@@ -154,7 +154,3 @@ async def root():
         "docs": "/docs" if settings.DEBUG else None,
         "timezone": settings.TIMEZONE
     }
-
-
-# Import datetime for health check
-from datetime import UTC, datetime, timezone

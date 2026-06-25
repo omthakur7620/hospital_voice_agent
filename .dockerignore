@@ -1,0 +1,80 @@
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# IDEs and editors
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Logs
+logs/
+*.log
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker
+Dockerfile
+docker-compose.yml
+docker-compose.*.yml
+.docker/
+
+# Development scripts
+run-local.sh
+run-local.bat
+
+# Node modules (if any)
+node_modules/
+npm-debug.log
+
+# Documentation
+docs/
+
+# Testing
+.pytest_cache/
+test_*.py
+tests/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp

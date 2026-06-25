@@ -1,0 +1,65 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: hospital-voice-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hospital_voice
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - hospital-network
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hospital-voice-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/hospital_voice
+      - APP_ENV=development
+      - DEBUG=true
+      - LOG_LEVEL=INFO
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8000,https://vapi.ai
+      - TIMEZONE=Asia/Kolkata
+      - SLOT_DURATION_MINUTES=30
+      - MAX_ALTERNATIVE_SLOTS=3
+      - BOOKING_WINDOW_DAYS=30
+      - HOSPITAL_DATA_PATH=data/hospital_data.json
+    restart: unless-stopped
+    networks:
+      - hospital-network
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  hospital-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
