@@ -1,99 +1,90 @@
 """
-Database engine + session management.
+Centralized application configuration.
 
-Design choices (and why):
-- Async engine (asyncpg) because the brief requires async API design and
-  this is an I/O-bound app (every request waits on Postgres) — async lets
-  one worker handle many concurrent Vapi calls without blocking.
-- pool_pre_ping=True: production Postgres (Railway/Render free tiers, Neon)
-  silently drops idle connections. Without this, the FIRST request after
-  any idle period throws a confusing "connection closed" error. This
-  setting tests the connection before handing it out and reconnects if dead.
-- expire_on_commit=False: we often return ORM objects in API responses
-  right after committing; without this SQLAlchemy would force a reload.
+All environment-dependent values live here. Nothing else in the codebase
+should call os.getenv() directly — import `settings` from this module instead.
+This keeps config testable and makes it obvious what env vars the app needs.
 """
 
-from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+from functools import lru_cache
+from typing import List
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import DeclarativeBase
-
-from app.config import settings
-from app.logger import get_logger
-
-logger = get_logger(__name__)
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Base(DeclarativeBase):
-    """Shared declarative base for all ORM models."""
-    pass
+class Settings(BaseSettings):
+    # --- App identity ---
+    APP_NAME: str = "Hospital Voice AI Receptionist Backend"
+    APP_ENV: str = "development"  # development | staging | production
+    DEBUG: bool = False
+
+    # --- Database ---
+    # Async driver required: postgresql+asyncpg://user:pass@host:port/dbname
+    DATABASE_URL: str
+
+    # --- CORS ---
+    # Comma-separated in .env, e.g. "https://vapi.ai,https://yourdomain.com"
+    ALLOWED_ORIGINS: str = "*"
+
+    # --- Logging ---
+    LOG_LEVEL: str = "INFO"
+
+    # --- Timezone ---
+    TIMEZONE: str = "Asia/Kolkata"  # Hospital is in Pune, India
+
+    # --- Business rules (kept here, not hardcoded in services) ---
+    SLOT_DURATION_MINUTES: int = 30   # used to compute alternative slots
+    MAX_ALTERNATIVE_SLOTS: int = 3
+    BOOKING_WINDOW_DAYS: int = 30     # how far ahead patients can book
+
+    # --- Seed data path ---
+    HOSPITAL_DATA_PATH: str = "data/hospital_data.json"
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        extra="ignore",
+    )
+
+    @property
+    def cors_origins(self) -> List[str]:
+        if self.ALLOWED_ORIGINS.strip() == "*":
+            return ["*"]
+        return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",") if origin.strip()]
+
+    @property
+    def is_production(self) -> bool:
+        return self.APP_ENV.lower() == "production"
+
+    @property
+    def database_url_async(self) -> str:
+        """
+        Ensures the database URL uses the asyncpg driver.
+        Converts postgresql:// to postgresql+asyncpg:// if needed.
+        """
+        url = self.DATABASE_URL
+        # If already has +asyncpg, return as is
+        if "+asyncpg" in url:
+            return url
+        # Replace postgresql:// with postgresql+asyncpg://
+        if url.startswith("postgresql://"):
+            return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        # If it starts with postgresql+ (but not asyncpg), add asyncpg
+        if url.startswith("postgresql+"):
+            return url.replace("postgresql+", "postgresql+asyncpg+", 1)
+        # Fallback: just return as is
+        return url
 
 
-engine = create_async_engine(
-    settings.database_url_async,  # Use async driver conversion
-    echo=settings.DEBUG,          # log raw SQL only in debug mode
-    pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
-    pool_recycle=1800,             # recycle connections every 30 min, avoids stale TCP conns
-)
-
-AsyncSessionLocal = async_sessionmaker(
-    bind=engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autoflush=False,
-)
-
-
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
+@lru_cache
+def get_settings() -> Settings:
     """
-    FastAPI dependency. Yields a session per request and guarantees
-    rollback-on-error + close, so a failed request never leaves a
-    half-committed transaction or a leaked connection.
-    Usage: db: AsyncSession = Depends(get_db)
+    Cached settings instance. lru_cache ensures the .env file is parsed once,
+    not on every import — important since config is imported widely.
     """
-    async with AsyncSessionLocal() as session:
-        try:
-            yield session
-        except Exception:
-            await session.rollback()
-            logger.exception("DB session rolled back due to unhandled exception")
-            raise
-        finally:
-            await session.close()
+    return Settings()
 
 
-@asynccontextmanager
-async def get_db_context() -> AsyncGenerator[AsyncSession, None]:
-    """
-    Same guarantees as get_db(), but as a context manager for use OUTSIDE
-    FastAPI's dependency injection — e.g. the seed script and the
-    evaluation harness, which run as standalone scripts.
-    """
-    async with AsyncSessionLocal() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
-
-
-async def check_db_connection() -> bool:
-    """
-    Used by a startup event / health endpoint to fail fast and loudly
-    if the DB is unreachable, instead of letting every request 500
-    with a cryptic error.
-    """
-    from sqlalchemy import text
-    try:
-        async with engine.connect() as conn:
-            await conn.execute(text("SELECT 1"))
-        return True
-    except Exception as exc:
-        logger.error(f"Database connection check failed: {exc}")
-        return False
+# Convenience singleton for direct import: `from app.config import settings`
+settings = get_settings()
