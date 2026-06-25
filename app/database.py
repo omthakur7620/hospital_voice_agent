@@ -1,20 +1,36 @@
 """
 Database engine + session management.
-
-Design choices (and why):
-- Async engine (asyncpg) because the brief requires async API design and
-  this is an I/O-bound app (every request waits on Postgres) — async lets
-  one worker handle many concurrent Vapi calls without blocking.
-- pool_pre_ping=True: production Postgres (Railway/Render free tiers, Neon)
-  silently drops idle connections. Without this, the FIRST request after
-  any idle period throws a confusing "connection closed" error. This
-  setting tests the connection before handing it out and reconnects if dead.
-- expire_on_commit=False: we often return ORM objects in API responses
-  right after committing; without this SQLAlchemy would force a reload.
+FORCED: asyncpg driver only - blocks psycopg2 completely.
 """
 
+import sys
+import os
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
+
+# ---------- CRITICAL: BLOCK PSYCOPG2 ----------
+# Render's environment has psycopg2 pre-installed.
+# This MUST run before ANY SQLAlchemy imports.
+
+# Remove psycopg2 from sys.modules if it exists
+for module_name in list(sys.modules.keys()):
+    if module_name == 'psycopg2' or module_name.startswith('psycopg2.'):
+        del sys.modules[module_name]
+
+# Create a mock to prevent psycopg2 from loading
+class BlockedModule:
+    def __getattr__(self, name):
+        raise ImportError(f"psycopg2 is disabled. Use asyncpg instead.")
+
+# Block future imports of psycopg2
+sys.modules['psycopg2'] = BlockedModule()
+sys.modules['psycopg2.extensions'] = BlockedModule()
+sys.modules['psycopg2.extras'] = BlockedModule()
+
+# Also prevent psycopg2 from being installed via pkg_resources
+os.environ['SQLALCHEMY_WARN_20'] = '1'
+
+# ---------- END BLOCK ----------
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
@@ -30,16 +46,21 @@ class Base(DeclarativeBase):
     pass
 
 
-# Ensure we're using asyncpg driver by converting the URL
+# Ensure we're using asyncpg driver
 DATABASE_URL = settings.database_url_async
+logger.info(f"Using DATABASE_URL with asyncpg driver")
 
+# Create engine with explicit asyncpg driver
 engine = create_async_engine(
     DATABASE_URL,
-    echo=settings.DEBUG,          # log raw SQL only in debug mode
+    echo=settings.DEBUG,
     pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
-    pool_recycle=1800,             # recycle connections every 30 min, avoids stale TCP conns
+    pool_size=5,
+    max_overflow=10,
+    pool_recycle=1800,
+    pool_timeout=30,
+    # Force asyncpg driver
+    module=__import__('asyncpg'),
 )
 
 AsyncSessionLocal = async_sessionmaker(
@@ -51,12 +72,6 @@ AsyncSessionLocal = async_sessionmaker(
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """
-    FastAPI dependency. Yields a session per request and guarantees
-    rollback-on-error + close, so a failed request never leaves a
-    half-committed transaction or a leaked connection.
-    Usage: db: AsyncSession = Depends(get_db)
-    """
     async with AsyncSessionLocal() as session:
         try:
             yield session
@@ -70,11 +85,6 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 @asynccontextmanager
 async def get_db_context() -> AsyncGenerator[AsyncSession, None]:
-    """
-    Same guarantees as get_db(), but as a context manager for use OUTSIDE
-    FastAPI's dependency injection — e.g. the seed script and the
-    evaluation harness, which run as standalone scripts.
-    """
     async with AsyncSessionLocal() as session:
         try:
             yield session
@@ -87,17 +97,12 @@ async def get_db_context() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def check_db_connection() -> bool:
-    """
-    Used by a startup event / health endpoint to fail fast and loudly
-    if the DB is unreachable, instead of letting every request 500
-    with a cryptic error.
-    """
     from sqlalchemy import text
     try:
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
-        logger.info("Database connection verified successfully with asyncpg")
+        logger.info("✅ Database connection verified successfully with asyncpg")
         return True
     except Exception as exc:
-        logger.error(f"Database connection check failed: {exc}")
+        logger.error(f"❌ Database connection failed: {exc}")
         return False

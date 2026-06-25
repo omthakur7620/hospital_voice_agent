@@ -1,92 +1,111 @@
 """
-Centralized application configuration.
-
-All environment-dependent values live here. Nothing else in the codebase
-should call os.getenv() directly — import `settings` from this module instead.
-This keeps config testable and makes it obvious what env vars the app needs.
+Database engine + session management.
+FORCED: asyncpg driver only - blocks psycopg2 completely.
 """
 
-from functools import lru_cache
-from typing import List
+import sys
+import os
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
+# ---------- CRITICAL: BLOCK PSYCOPG2 ----------
+# Render's environment has psycopg2 pre-installed.
+# This MUST run before ANY SQLAlchemy imports.
 
+# Remove psycopg2 from sys.modules if it exists
+for module_name in list(sys.modules.keys()):
+    if module_name == 'psycopg2' or module_name.startswith('psycopg2.'):
+        del sys.modules[module_name]
 
-class Settings(BaseSettings):
-    # --- App identity ---
-    APP_NAME: str = "Hospital Voice AI Receptionist Backend"
-    APP_ENV: str = "development"  # development | staging | production
-    DEBUG: bool = False
+# Create a mock to prevent psycopg2 from loading
+class BlockedModule:
+    def __getattr__(self, name):
+        raise ImportError(f"psycopg2 is disabled. Use asyncpg instead.")
 
-    # --- Database ---
-    # Render injects: postgresql://user:pass@host:port/dbname
-    # We need to convert to async driver: postgresql+asyncpg://...
-    DATABASE_URL: str
+# Block future imports of psycopg2
+sys.modules['psycopg2'] = BlockedModule()
+sys.modules['psycopg2.extensions'] = BlockedModule()
+sys.modules['psycopg2.extras'] = BlockedModule()
 
-    # --- CORS ---
-    # Comma-separated in .env, e.g. "https://vapi.ai,https://yourdomain.com"
-    ALLOWED_ORIGINS: str = "*"
+# Also prevent psycopg2 from being installed via pkg_resources
+os.environ['SQLALCHEMY_WARN_20'] = '1'
 
-    # --- Logging ---
-    LOG_LEVEL: str = "INFO"
+# ---------- END BLOCK ----------
 
-    # --- Timezone ---
-    TIMEZONE: str = "Asia/Kolkata"  # Hospital is in Pune, India
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase
 
-    # --- Business rules (kept here, not hardcoded in services) ---
-    SLOT_DURATION_MINUTES: int = 30   # used to compute alternative slots
-    MAX_ALTERNATIVE_SLOTS: int = 3
-    BOOKING_WINDOW_DAYS: int = 30     # how far ahead patients can book
+from app.config import settings
+from app.logger import get_logger
 
-    # --- Seed data path ---
-    HOSPITAL_DATA_PATH: str = "data/hospital_data.json"
-
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=True,
-        extra="ignore",
-    )
-
-    @property
-    def database_url_async(self) -> str:
-        """
-        Normalizes DATABASE_URL to always use the asyncpg driver, regardless
-        of which prefix the hosting provider hands us. Some providers use
-        'postgres://' (no 'ql') instead of 'postgresql://' — a naive .replace()
-        silently fails to match that and leaves the sync driver in place,
-        which breaks create_async_engine() with exactly this error.
-        """
-        url = self.DATABASE_URL
-
-        if url.startswith("postgres://"):
-            return url.replace("postgres://", "postgresql+asyncpg://", 1)
-        if url.startswith("postgresql://"):
-            return url.replace("postgresql://", "postgresql+asyncpg://", 1)
-        if url.startswith("postgresql+psycopg2://"):
-            return url.replace("postgresql+psycopg2://", "postgresql+asyncpg://", 1)
-
-        return url  # already postgresql+asyncpg:// (or something custom) — leave it alone
-
-    @property
-    def cors_origins(self) -> List[str]:
-        if self.ALLOWED_ORIGINS.strip() == "*":
-            return ["*"]
-        return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",") if origin.strip()]
-
-    @property
-    def is_production(self) -> bool:
-        return self.APP_ENV.lower() == "production"
+logger = get_logger(__name__)
 
 
-@lru_cache
-def get_settings() -> Settings:
+class Base(DeclarativeBase):
+    """Shared declarative base for all ORM models."""
+    pass
+
+
+# Ensure we're using asyncpg driver
+DATABASE_URL = settings.database_url_async
+logger.info(f"Using DATABASE_URL with asyncpg driver")
+
+# Create engine with explicit asyncpg driver
+engine = create_async_engine(
+    DATABASE_URL,
+    echo=settings.DEBUG,
+    pool_pre_ping=True,
+    pool_size=5,
+    max_overflow=10,
+    pool_recycle=1800,
+    pool_timeout=30,
+)
+
+AsyncSessionLocal = async_sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autoflush=False,
+)
+
+
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """FastAPI dependency for database session."""
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            logger.exception("DB session rolled back due to unhandled exception")
+            raise
+        finally:
+            await session.close()
+
+
+@asynccontextmanager
+async def get_db_context() -> AsyncGenerator[AsyncSession, None]:
+    """Database session context manager for scripts."""
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
+
+
+async def check_db_connection() -> bool:
     """
-    Cached settings instance. lru_cache ensures the .env file is parsed once,
-    not on every import — important since config is imported widely.
+    Check database connection with detailed error reporting.
     """
-    return Settings()
-
-
-# Convenience singleton for direct import: `from app.config import settings`
-settings = get_settings()
+    from sqlalchemy import text
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        logger.info("✅ Database connection verified successfully with asyncpg")
+        return True
+    except Exception as exc:
+        logger.error(f"❌ Database connection failed: {exc}")
+        return False
